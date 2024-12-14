@@ -95,14 +95,12 @@ const board = (
 	depth: Fraction,
 	passes: number
 ) => {
-	const depthPerPass = depth.divide(passes);
+	const depthPerPass = depth.divide(passes).multiply(-1);
 
 	let body = '\n';
 
 	for (let i = 0; i < passes; i++) {
-		console.log(
-			`Pass ${i + 1}: ${depthPerPass.multiply(i + 1).toDecimal()}`
-		);
+		console.log(`Pass ${i + 1}: ${depthPerPass.multiply(i + 1).toDecimal()}`);
 		body += pass(
 			x,
 			y,
@@ -130,22 +128,30 @@ type Vals = Record<Name, ValObj>;
 const group = 'n';
 const vals: Vals = {
 	a: {
-		x: '15 15/16',
-		y: '12 1/16',
+		x: '8 1/16',
+		y: '12',
+		offset: '11/16'
+	},
+	b: {
+		x: '12',
+		y: '12'
 	},
 	c: {
+		x: '16 1/32',
+		y: '12'
+	},
+	d: {
 		x: '16',
 		y: '12',
 		depth: '3/16',
-		passes: 3,
+		passes: 3
 	},
-	b: {
-		x: '10',
-		y: '10',
-		offset: '2',
-		depth: '1/2',
-		passes: 4,
-	},
+	e: {
+		x: '20',
+		y: '12',
+		depth: '3/16',
+		passes: 3
+	}
 };
 
 rmSync(`./group-${group}`, { recursive: true, force: true });
@@ -153,7 +159,7 @@ mkdirSync(`./group-${group}`);
 
 for (const [
 	name,
-	{ x, y, offset = '1', depth = '1/8', passes = 2 },
+	{ x, y, offset = '1', depth = '1/8', passes = 2 }
 ] of Object.entries(vals)) {
 	const output = board(
 		new Fraction(x),
@@ -164,6 +170,6 @@ for (const [
 	);
 
 	writeFileSync(`./group-${group}/${name}.sbp`, output, {
-		encoding: 'utf8',
+		encoding: 'utf8'
 	});
 }
