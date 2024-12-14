@@ -66,6 +66,7 @@ C9                   'Change tool
 TR,11000               'Set spindle RPM
 '
 MS,0.7,0.125
+JS,9,3
 JZ,0.800000
 C6                   'Spindle on
 PAUSE 2
@@ -87,42 +88,82 @@ END
 
 `;
 
-const board = (x: Fraction, y: Fraction, offset: Fraction) => {
-	const depth1 = new Fraction('1/16').multiply(-1);
-	const depth2 = new Fraction('2/16').multiply(-1);
-	const depth3 = new Fraction('3/16').multiply(-1);
+const board = (
+	x: Fraction,
+	y: Fraction,
+	offset: Fraction,
+	depth: Fraction,
+	passes: number
+) => {
+	const depthPerPass = depth.divide(passes);
 
-	const body = `'
-${pass(x, y, offset, depth1, ZERO)}
-${pass(x, y, offset, depth2, depth1)}
-${pass(x, y, offset, depth3, depth2)}
-'`;
+	let body = '\n';
+
+	for (let i = 0; i < passes; i++) {
+		console.log(
+			`Pass ${i + 1}: ${depthPerPass.multiply(i + 1).toDecimal()}`
+		);
+		body += pass(
+			x,
+			y,
+			offset,
+			depthPerPass.multiply(i + 1),
+			depthPerPass.multiply(i)
+		);
+	}
+
+	body += '\n';
 
 	return wrapper(body);
 };
 
-type Val = [name: string, coords: [x: string, y: string], offset?: string];
+type ValObj = {
+	x: string;
+	y: string;
+	offset?: string;
+	depth?: string;
+	passes?: number;
+};
+type Name = string;
+type Vals = Record<Name, ValObj>;
 
-const vals: Val[] = [
-	// ['a', ['20 1/16', '12'], '3/4'],
-	['a', ['15 15/16', '12']],
-	['b', ['15 15/16', '12']],
-	['c', ['15 15/16', '11 15/16']],
-	['test', ['16', '12']],
-];
-const group = 'j';
+const group = 'n';
+const vals: Vals = {
+	a: {
+		x: '15 15/16',
+		y: '12 1/16',
+	},
+	c: {
+		x: '16',
+		y: '12',
+		depth: '3/16',
+		passes: 3,
+	},
+	b: {
+		x: '10',
+		y: '10',
+		offset: '2',
+		depth: '1/2',
+		passes: 4,
+	},
+};
 
 rmSync(`./group-${group}`, { recursive: true, force: true });
 mkdirSync(`./group-${group}`);
 
-for (const [label, [x, y], offset = '1'] of vals) {
+for (const [
+	name,
+	{ x, y, offset = '1', depth = '1/8', passes = 2 },
+] of Object.entries(vals)) {
 	const output = board(
 		new Fraction(x),
 		new Fraction(y),
-		new Fraction(offset)
+		new Fraction(offset),
+		new Fraction(depth),
+		passes
 	);
 
-	writeFileSync(`./group-${group}/${label}.sbp`, output, {
+	writeFileSync(`./group-${group}/${name}.sbp`, output, {
 		encoding: 'utf8',
 	});
 }
